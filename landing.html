@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Clinical Copilot — Landing (Cinematic)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { hcblue:'#0D6EFD', ink:'#0f172a' },
+          boxShadow: {
+            glow:'0 10px 30px -10px rgba(13,110,253,.35)',
+            card:'0 6px 18px -8px rgba(2,6,23,.25)'
+          },
+          keyframes:{
+            fadeIn:{from:{opacity:0},to:{opacity:1}},
+            rise:{from:{opacity:0,transform:'translateY(14px)'},to:{opacity:1,transform:'translateY(0)'}},
+            slideInR:{from:{opacity:0,transform:'translateX(16px)'},to:{opacity:1,transform:'translateX(0)'}},
+            slideInL:{from:{opacity:0,transform:'translateX(-16px)'},to:{opacity:1,transform:'translateX(0)'}},
+            scaleIn:{from:{opacity:0,transform:'scale(.98)'},to:{opacity:1,transform:'scale(1)'}},
+            pulseDot:{'0%,100%':{transform:'scale(1)',opacity:.8},'50%':{transform:'scale(1.25)',opacity:1}},
+            shimmer:{'100%':{transform:'translateX(100%)'}},
+            floaty:{'0%,100%':{transform:'translateY(-2px)'},'50%':{transform:'translateY(2px)'}}
+          },
+          animation:{
+            fadeIn:'fadeIn .6s ease-out both',
+            rise:'rise .6s ease-out both',
+            slideInR:'slideInR .6s ease-out both',
+            slideInL:'slideInL .6s ease-out both',
+            scaleIn:'scaleIn .35s ease-out both',
+            pulseDot:'pulseDot 1.6s ease-in-out infinite',
+            shimmer:'shimmer 1.25s linear infinite',
+            floaty:'floaty 4s ease-in-out infinite'
+          },
+          backgroundImage:{
+            dots:'radial-gradient(circle at 1px 1px, rgba(13,110,253,.18) 1px, transparent 1px)'
+          }
+        }
+      }
+    }
+  </script>
+  <meta name="theme-color" content="#0D6EFD" />
+  <style>
+    /* intersection reveal */
+    .reveal{opacity:0; transform:translateY(16px); transition:all .5s ease}
+    .reveal.show{opacity:1; transform:none}
+    /* shimmer */
+    .skeleton{position:relative; overflow:hidden; background:#eef2ff}
+    .skeleton:after{
+      content:''; position:absolute; inset:0; transform:translateX(-100%);
+      background:linear-gradient(90deg,transparent,rgba(255,255,255,.7),transparent);
+      animation: shimmer 1.4s infinite;
+    }
+    /* ripple */
+    .ripple-wrap{position:relative; overflow:hidden}
+    .r{position:absolute; border-radius:9999px; background:rgba(13,110,253,.18); transform:translate(-50%,-50%); pointer-events:none; width:24rem; height:24rem; animation:ripple .6s ease-out}
+    @keyframes ripple{0%{transform:translate(-50%,-50%) scale(.2); opacity:.5}100%{transform:translate(-50%,-50%) scale(1); opacity:0}}
+    /* accordion */
+    .acc .body{max-height:0; overflow:hidden; transition:max-height .35s ease}
+    .acc.open .body{max-height:320px}
+  </style>
+</head>
+<body class="bg-white text-ink selection:bg-blue-200 selection:text-ink">
+  <!-- Nav -->
+  <header class="sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-slate-200 animate-fadeIn">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="landing.html" class="w-8 h-8 rounded-xl bg-hcblue shadow-glow block"></a>
+        <span class="font-semibold tracking-tight">Clinical Copilot</span>
+        <span class="hidden md:inline text-xs text-slate-500 ml-3">Evidence-mapped · Audit-ready</span>
+      </div>
+      <nav class="hidden md:flex items-center gap-6 text-sm">
+        <a href="#capabilities" class="hover:text-slate-700">Capabilities</a>
+        <a href="#architecture" class="hover:text-slate-700">Architecture</a>
+        <a href="#workflow" class="hover:text-slate-700">Workflow</a>
+        <a href="#security" class="hover:text-slate-700">Security</a>
+        <a href="#faq" class="hover:text-slate-700">FAQ</a>
+      </nav>
+      <div class="flex items-center gap-3">
+        <span id="statusPill" class="hidden md:inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 text-xs">
+          <span id="statusDot" class="w-2.5 h-2.5 rounded-full bg-slate-300 animate-pulseDot"></span>
+          <span id="statusText">Checking…</span>
+        </span>
+        <a href="app.html" class="px-3 py-2 rounded-lg bg-hcblue text-white hover:bg-blue-700 text-sm shadow-glow ripple-wrap">
+          <span>Open App</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="relative overflow-hidden">
+    <!-- ambient shapes -->
+    <div class="absolute -top-28 -left-28 w-[40rem] h-[40rem]">
+      <div class="w-full h-full rounded-full bg-blue-50 blur-2xl animate-floaty"></div>
+    </div>
+    <div class="absolute -bottom-24 -right-24 w-[34rem] h-[34rem]">
+      <div class="w-full h-full rounded-full bg-blue-100 blur-2xl animate-floaty" style="animation-delay:1.2s"></div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 py-16 lg:py-24 relative">
+      <div class="grid lg:grid-cols-2 gap-10 items-center">
+        <div class="reveal">
+          <h1 class="text-4xl lg:text-5xl font-bold leading-tight">
+            Clinical Copilot.<br>
+            <span class="text-hcblue">Structured plans with citations.</span>
+          </h1>
+          <p class="mt-4 text-slate-600 max-w-xl">
+            From messy charts to a defensible plan: differential, diagnostics, treatment, disposition, and red flags — built for real clinical flow.
+          </p>
+          <div class="mt-6 flex flex-wrap gap-3">
+            <a href="app.html" class="px-5 py-3 rounded-xl bg-hcblue text-white hover:bg-blue-700 shadow-glow ripple-wrap">Try the Copilot</a>
+            <a href="#capabilities" class="px-5 py-3 rounded-xl border border-hcblue text-hcblue hover:bg-blue-50">Explore capabilities</a>
+          </div>
+
+          <div class="mt-8 grid grid-cols-3 gap-4 max-w-lg">
+            <div class="rounded-xl border border-blue-100 bg-white p-4 text-center shadow-card animate-rise">
+              <div class="text-2xl font-bold text-hcblue">~30s</div>
+              <div class="text-xs text-slate-500">to actionable plan</div>
+            </div>
+            <div class="rounded-xl border border-blue-100 bg-white p-4 text-center shadow-card animate-rise" style="animation-delay:.08s">
+              <div class="text-2xl font-bold text-hcblue">100%</div>
+              <div class="text-xs text-slate-500">citations visible</div>
+            </div>
+            <div class="rounded-xl border border-blue-100 bg-white p-4 text-center shadow-card animate-rise" style="animation-delay:.16s">
+              <div class="text-2xl font-bold text-hcblue">0</div>
+              <div class="text-xs text-slate-500">PHI stored by default</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Complex snapshot card -->
+        <div class="relative">
+          <div class="absolute -inset-6 bg-dots bg-[length:18px_18px] opacity-40 rounded-3xl"></div>
+          <div class="relative rounded-2xl p-6 border border-blue-100 bg-white/70 backdrop-blur shadow-xl animate-slideInR">
+            <div class="text-sm font-medium text-slate-700">System snapshot</div>
+            <div class="mt-3 grid sm:grid-cols-2 gap-3 text-sm">
+              <div class="rounded-xl border border-slate-200 bg-white p-4">
+                <div class="text-slate-500">Retrieval</div>
+                <div class="font-semibold">Guideline-aware Jaccard</div>
+                <div class="mt-1 text-xs text-slate-500">Chunked IDSA / KDIGO / ADA search.</div>
+              </div>
+              <div class="rounded-xl border border-slate-200 bg-white p-4">
+                <div class="text-slate-500">Reasoning</div>
+                <div class="font-semibold">Tiny model + rules fallback</div>
+                <div class="mt-1 text-xs text-slate-500">Deterministic JSON if model offline.</div>
+              </div>
+              <div class="rounded-xl border border-slate-200 bg-white p-4">
+                <div class="text-slate-500">Output</div>
+                <div class="font-semibold">Structured summary</div>
+                <div class="mt-1 text-xs text-slate-500">Dx · Tx · Dispo · Flags + cites</div>
+              </div>
+              <div class="rounded-xl border border-slate-200 bg-white p-4">
+                <div class="text-slate-500">Interfaces</div>
+                <div class="font-semibold">FastAPI + HTML</div>
+                <div class="mt-1 text-xs text-slate-500">Works with portals; add FHIR.</div>
+              </div>
+            </div>
+            <div class="mt-4 flex items-center justify-between gap-3">
+              <div class="text-xs text-slate-500">Live status: <span id="heroStatus" class="font-medium">checking…</span></div>
+              <a href="app.html" class="px-3 py-2 rounded-lg bg-hcblue text-white hover:bg-blue-700 text-xs shadow-glow ripple-wrap">Open App</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Capability Matrix -->
+  <section id="capabilities" class="max-w-7xl mx-auto px-4 py-16">
+    <h2 class="text-2xl font-semibold tracking-tight reveal">Capabilities matrix</h2>
+    <div class="mt-6 grid lg:grid-cols-3 gap-6">
+      <div class="rounded-2xl p-6 border border-slate-200 bg-white shadow-card reveal">
+        <div class="font-semibold">Reasoned plans, not blobs</div>
+        <p class="text-sm text-slate-600 mt-2">Structured plans with differential, diagnostics, treatment, disposition, and red flags.</p>
+        <ul class="mt-3 text-sm list-disc pl-5 text-slate-700 space-y-1">
+          <li>Source-linked citations</li><li>Risks & contraindications</li><li>Monitoring/follow-up</li>
+        </ul>
+      </div>
+      <div class="rounded-2xl p-6 border border-slate-200 bg-white shadow-card reveal">
+        <div class="font-semibold">Signal over noise</div>
+        <p class="text-sm text-slate-600 mt-2">Filters irrelevant history; surfaces only factors that change decisions.</p>
+        <ul class="mt-3 text-sm list-disc pl-5 text-slate-700 space-y-1">
+          <li>Simple patient-facts API</li><li>Token-efficient prompts</li><li>Deterministic fallback</li>
+        </ul>
+      </div>
+      <div class="rounded-2xl p-6 border border-slate-200 bg-white shadow-card reveal">
+        <div class="font-semibold">Drop-in integration</div>
+        <p class="text-sm text-slate-600 mt-2">FastAPI endpoints with CORS; optional FHIR ingest helper.</p>
+        <ul class="mt-3 text-sm list-disc pl-5 text-slate-700 space-y-1">
+          <li>POST <code>/reason</code> · GET <code>/status</code></li>
+          <li><code>app/knowledge/*.txt</code> for guidelines</li>
+          <li>Local-first; no PHI persistence by default</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Architecture -->
+  <section id="architecture" class="bg-blue-50 border-y border-blue-100">
+    <div class="max-w-7xl mx-auto px-4 py-16">
+      <h2 class="text-2xl font-semibold tracking-tight reveal">Architecture at a glance</h2>
+      <div class="mt-6 grid lg:grid-cols-2 gap-8 items-center">
+        <div class="rounded-2xl p-6 bg-white border border-slate-200 shadow-card animate-slideInL">
+          <!-- SVG schematic -->
+          <svg viewBox="0 0 820 340" class="w-full">
+            <defs>
+              <linearGradient id="g" x1="0" x2="1"><stop offset="0%" stop-color="#E3F2FD"/><stop offset="100%" stop-color="#ffffff"/></linearGradient>
+            </defs>
+            <rect x="20" y="40" width="210" height="80" rx="14" fill="url(#g)" stroke="#93c5fd"/>
+            <text x="35" y="70" font-size="14" font-family="Inter, system-ui">Patient facts</text>
+            <text x="35" y="95" font-size="12" fill="#475569">{ text } array</text>
+            <rect x="300" y="20" width="240" height="120" rx="14" fill="#fff" stroke="#93c5fd"/>
+            <text x="315" y="50" font-size="14">Retriever</text>
+            <text x="315" y="73" font-size="12" fill="#475569">Guideline chunks</text>
+            <text x="315" y="96" font-size="12" fill="#475569">Token overlap scoring</text>
+            <rect x="600" y="20" width="200" height="120" rx="14" fill="#fff" stroke="#93c5fd"/>
+            <text x="615" y="50" font-size="14">Reasoner</text>
+            <text x="615" y="73" font-size="12" fill="#475569">Tiny model → rules</text>
+            <text x="615" y="96" font-size="12" fill="#475569">Deterministic JSON</text>
+            <rect x="300" y="190" width="240" height="120" rx="14" fill="#fff" stroke="#93c5fd"/>
+            <text x="315" y="220" font-size="14">API (FastAPI)</text>
+            <text x="315" y="243" font-size="12" fill="#475569">POST /reason · GET /status</text>
+            <text x="315" y="266" font-size="12" fill="#475569">Optional: /ingest/fhir</text>
+            <rect x="600" y="190" width="200" height="120" rx="14" fill="url(#g)" stroke="#93c5fd"/>
+            <text x="615" y="220" font-size="14">UI</text>
+            <text x="615" y="243" font-size="12" fill="#475569">Clinical summary + citations</text>
+            <line x1="230" y1="80" x2="300" y2="80" stroke="#0D6EFD" stroke-width="2"/><polygon points="300,80 290,75 290,85" fill="#0D6EFD"/>
+            <line x1="540" y1="80" x2="600" y2="80" stroke="#0D6EFD" stroke-width="2"/><polygon points="600,80 590,75 590,85" fill="#0D6EFD"/>
+            <line x1="700" y1="140" x2="700" y2="190" stroke="#0D6EFD" stroke-width="2"/><polygon points="700,190 705,180 695,180" fill="#0D6EFD"/>
+            <line x1="420" y1="140" x2="420" y2="190" stroke="#0D6EFD" stroke-width="2"/><polygon points="420,190 425,180 415,180" fill="#0D6EFD"/>
+          </svg>
+        </div>
+        <div class="space-y-4">
+          <div class="rounded-2xl p-5 bg-white border border-slate-200 shadow-card reveal">
+            <div class="font-semibold">Why this stack?</div>
+            <p class="text-sm text-slate-600 mt-2">Quick wins without heavy infra. If the model is down, rules keep output safe and chart-ready.</p>
+          </div>
+          <div class="rounded-2xl p-5 bg-white border border-slate-200 shadow-card reveal">
+            <div class="font-semibold">Extensible</div>
+            <p class="text-sm text-slate-600 mt-2">Drop new text files into <code>app/knowledge/</code>. The API stays the same.</p>
+          </div>
+          <div class="flex gap-3 reveal">
+            <a href="app.html" class="px-4 py-2 rounded-xl bg-hcblue text-white hover:bg-blue-700 shadow-glow ripple-wrap">Open App</a>
+            <a href="#security" class="px-4 py-2 rounded-xl border border-hcblue text-hcblue hover:bg-blue-50">Security</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Workflow timeline -->
+  <section id="workflow" class="max-w-7xl mx-auto px-4 py-16">
+    <h2 class="text-2xl font-semibold tracking-tight reveal">Clinician workflow</h2>
+    <ol class="mt-6 relative">
+      <!-- 1 -->
+      <li class="ml-4 pl-6 py-6 border-l border-blue-200 relative reveal">
+        <span class="absolute -left-2 top-7 w-3 h-3 rounded-full bg-hcblue"></span>
+        <div class="font-semibold">Paste facts or EHR snippets</div>
+        <p class="text-sm text-slate-600">Short “{ text }” items are enough. The system filters to what changes care.</p>
+      </li>
+      <!-- 2 -->
+      <li class="ml-4 pl-6 py-6 border-l border-blue-200 relative reveal">
+        <span class="absolute -left-2 top-7 w-3 h-3 rounded-full bg-hcblue"></span>
+        <div class="font-semibold">Ask a pointed question</div>
+        <p class="text-sm text-slate-600">E.g., “chest pain — next steps?”. Retriever aligns to guideline chunks.</p>
+      </li>
+      <!-- 3 -->
+      <li class="ml-4 pl-6 py-6 border-l border-blue-200 relative reveal">
+        <span class="absolute -left-2 top-7 w-3 h-3 rounded-full bg-hcblue"></span>
+        <div class="font-semibold">Review an explainable plan</div>
+        <p class="text-sm text-slate-600">Differential, diagnostics, treatment, disposition, red flags — with citations.</p>
+      </li>
+    </ol>
+  </section>
+
+  <!-- Use cases + Comparison -->
+  <section class="bg-white">
+    <div class="max-w-7xl mx-auto px-4 py-16">
+      <h2 class="text-2xl font-semibold tracking-tight reveal">Where it shines</h2>
+      <div class="mt-6 grid lg:grid-cols-3 gap-6">
+        <div class="rounded-2xl p-6 border border-slate-200 shadow-card reveal">
+          <div class="font-semibold">ED triage</div>
+          <p class="text-sm text-slate-600 mt-2">Rapid differentials and red flags for time-sensitive complaints.</p>
+        </div>
+        <div class="rounded-2xl p-6 border border-slate-200 shadow-card reveal">
+          <div class="font-semibold">Hospital medicine</div>
+          <p class="text-sm text-slate-600 mt-2">De-noised histories for rounding and handoff.</p>
+        </div>
+        <div class="rounded-2xl p-6 border border-slate-200 shadow-card reveal">
+          <div class="font-semibold">Outpatient</div>
+          <p class="text-sm text-slate-600 mt-2">Guideline-aligned next steps for common complaints.</p>
+        </div>
+      </div>
+
+      <div class="mt-12 reveal">
+        <h3 class="font-semibold">Why not a generic chatbot?</h3>
+        <div class="mt-4 overflow-x-auto">
+          <table class="min-w-full text-sm border border-slate-200 rounded-xl overflow-hidden">
+            <thead class="bg-blue-50 text-slate-700">
+              <tr><th class="text-left p-3">Capability</th><th class="text-left p-3">Generic Chatbot</th><th class="text-left p-3">Clinical Copilot</th></tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200">
+              <tr><td class="p-3">Structured output</td><td class="p-3 text-slate-500">Free-form text</td><td class="p-3 font-medium">Differential / Dx / Tx / Dispo / Flags</td></tr>
+              <tr><td class="p-3">Citations</td><td class="p-3 text-slate-500">Often missing</td><td class="p-3 font-medium">Always surfaced</td></tr>
+              <tr><td class="p-3">Fallback behavior</td><td class="p-3 text-slate-500">Unpredictable</td><td class="p-3 font-medium">Deterministic rules path</td></tr>
+              <tr><td class="p-3">Token usage</td><td class="p-3 text-slate-500">Bloated context</td><td class="p-3 font-medium">Filtered patient facts</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="mt-6">
+          <a href="app.html" class="px-5 py-3 rounded-xl bg-hcblue text-white hover:bg-blue-700 shadow-glow ripple-wrap">Open the App</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Security -->
+  <section id="security" class="bg-blue-50 border-y border-blue-100">
+    <div class="max-w-7xl mx-auto px-4 py-16">
+      <h2 class="text-2xl font-semibold tracking-tight reveal">Security & operational stance</h2>
+      <div class="mt-6 grid lg:grid-cols-3 gap-6">
+        <div class="rounded-2xl p-6 bg-white border border-slate-200 shadow-card reveal">
+          <div class="font-semibold">Minimal data handling</div>
+          <p class="text-sm text-slate-600 mt-2">Request-scoped processing. No PHI persisted unless you wire a store.</p>
+        </div>
+        <div class="rounded-2xl p-6 bg-white border border-slate-200 shadow-card reveal">
+          <div class="font-semibold">Deterministic fallback</div>
+          <p class="text-sm text-slate-600 mt-2">If the tiny model is unavailable, rule paths keep output predictable.</p>
+        </div>
+        <div class="rounded-2xl p-6 bg-white border border-slate-200 shadow-card reveal">
+          <div class="font-semibold">Audit-friendly</div>
+          <p class="text-sm text-slate-600 mt-2">Citations inline; steps explicit. Easy for peer review and charting.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="max-w-7xl mx-auto px-4 py-16">
+    <h2 class="text-2xl font-semibold tracking-tight reveal">FAQ</h2>
+    <div class="mt-6 space-y-3">
+      <div class="acc rounded-2xl border border-slate-200 reveal">
+        <button class="w-full text-left px-5 py-4 font-medium flex items-center justify-between">Does it store PHI?<span class="text-slate-400">▸</span></button>
+        <div class="body px-5 pb-4 text-sm text-slate-600">No. By default, the system is stateless. You control any persistence you add.</div>
+      </div>
+      <div class="acc rounded-2xl border border-slate-200 reveal">
+        <button class="w-full text-left px-5 py-4 font-medium flex items-center justify-between">How are recommendations generated?<span class="text-slate-400">▸</span></button>
+        <div class="body px-5 pb-4 text-sm text-slate-600">Retriever → tiny model → rules fallback. Output is structured JSON rendered as an explainable plan with citations.</div>
+      </div>
+      <div class="acc rounded-2xl border border-slate-200 reveal">
+        <button class="w-full text-left px-5 py-4 font-medium flex items-center justify-between">Can we add institutional guidelines?<span class="text-slate-400">▸</span></button>
+        <div class="body px-5 pb-4 text-sm text-slate-600">Yes — drop text files into <code>app/knowledge/</code>. They’re chunked and indexed at startup.</div>
+      </div>
+      <div class="acc rounded-2xl border border-slate-200 reveal">
+        <button class="w-full text-left px-5 py-4 font-medium flex items-center justify-between">What does integration look like?<span class="text-slate-400">▸</span></button>
+        <div class="body px-5 pb-4 text-sm text-slate-600">Use FastAPI endpoints or the FHIR parser on <code>/ingest/fhir</code> to transform bundles into facts.</div>
+      </div>
+    </div>
+    <div class="mt-8">
+      <a href="app.html" class="px-5 py-3 rounded-xl bg-hcblue text-white hover:bg-blue-700 shadow-glow ripple-wrap">Open the App</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-hcblue text-white py-10 mt-16">
+    <div class="max-w-7xl mx-auto px-4 text-sm">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-7 h-7 rounded-lg bg-white/20 animate-floaty"></div>
+          <div class="font-semibold tracking-tight">Clinical Copilot</div>
+        </div>
+        <div class="opacity-90">© <span id="yr"></span> Clinical Copilot — FastAPI · Tailwind</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Toasts -->
+  <div id="toasts" class="fixed top-4 right-4 z-[60] space-y-2 pointer-events-none"></div>
+
+  <script>
+    const API = "http://127.0.0.1:9000";
+    const pill = document.getElementById("statusPill");
+    const dot = document.getElementById("statusDot");
+    const text = document.getElementById("statusText");
+    const hero = document.getElementById("heroStatus");
+    const $ = s => document.querySelector(s);
+
+    // intersection reveal
+    const io = new IntersectionObserver(es => es.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('show'); }), {threshold:.15});
+    document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+    // backend status
+    (async () => {
+      pill.classList.remove("hidden");
+      try {
+        const r = await fetch(`${API}/status`);
+        const ok = r.ok;
+        dot.className = "w-2.5 h-2.5 rounded-full " + (ok ? "bg-hcblue animate-pulseDot" : "bg-rose-500 animate-pulseDot");
+        text.textContent = ok ? "Backend up" : "Backend down";
+        if (hero) hero.textContent = ok ? "backend up" : "backend down";
+      } catch {
+        dot.className = "w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulseDot";
+        text.textContent = "Backend unreachable";
+        if (hero) hero.textContent = "backend unreachable";
+      }
+    })();
+
+    // accordion
+    document.querySelectorAll('.acc').forEach(card=>{
+      const btn = card.querySelector('button');
+      btn.addEventListener('click', ()=>{
+        card.classList.toggle('open');
+      });
+    });
+
+    // ripple
+    function ripple(e){
+      const wrap = e.currentTarget;
+      const r = document.createElement('span');
+      r.className = 'r';
+      const rect = wrap.getBoundingClientRect();
+      r.style.left = (e.clientX - rect.left)+'px';
+      r.style.top  = (e.clientY - rect.top)+'px';
+      wrap.appendChild(r);
+      setTimeout(()=>r.remove(), 600);
+    }
+    document.querySelectorAll('.ripple-wrap').forEach(b => b.addEventListener('click', ripple));
+
+    // toast helper (for future hooks)
+    function toast(msg,type='info'){
+      const host = $("#toasts");
+      const card = document.createElement('div');
+      card.className = `pointer-events-auto rounded-xl px-3 py-2 text-xs text-white shadow-lg animate-rise ${type==='error'?'bg-rose-500':type==='success'?'bg-emerald-500':'bg-slate-900'}`;
+      card.textContent = msg;
+      host.appendChild(card);
+      setTimeout(()=>card.style.opacity='0', 1800);
+      setTimeout(()=>card.remove(), 2200);
+    }
+
+    document.getElementById("yr").textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>

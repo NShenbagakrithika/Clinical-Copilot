@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Clinical Copilot — Mini UI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Tailwind from CDN -->
+  <script src="https://cdn.tailwindcss.com">
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            hcblue: '#0D6EFD' // Healthcare blue
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-50">
+  <div class="max-w-6xl mx-auto p-6 space-y-6">
+    <h1 class="text-2xl font-bold">Clinical Copilot — Mini UI</h1>
+
+    <!-- Controls -->
+    <section class="grid md:grid-cols-2 gap-6">
+      <div class="bg-white p-4 rounded-xl shadow">
+        <h2 class="font-semibold mb-2">Ask the ML model (/reason)</h2>
+        <label class="block text-sm font-medium mb-1">Question</label>
+        <input id="q" class="w-full border rounded px-3 py-2 mb-3"
+               value="fever + productive cough + pleuritic chest pain — next steps?" />
+
+        <div class="flex items-center justify-between mb-1">
+          <label class="text-sm font-medium">Patient facts (JSON array)</label>
+          <button id="exFacts" class="text-xs underline text-slate-600 hover:text-slate-900">
+            insert example
+          </button>
+        </div>
+        <textarea id="facts" class="w-full h-36 border rounded p-2 text-sm"
+          placeholder='[{"text":"O2 sat 92% RA"}]'></textarea>
+
+        <div class="mt-3 flex gap-3 items-center">
+          <button id="askBtn"
+                  class="px-4 py-2 bg-hcblue text-white rounded hover:bg-emerald-700">
+            Ask
+          </button>
+          <span id="status" class="text-sm text-slate-500"></span>
+        </div>
+
+        <!-- Toggle Summary View -->
+        <div class="flex items-center gap-3 mt-3">
+          <label class="inline-flex items-center gap-2 text-sm">
+            <input id="summaryMode" type="checkbox" class="w-4 h-4">
+            Summary view
+          </label>
+        </div>
+
+        <p class="text-xs text-slate-500 mt-2">
+          Hitting <code>POST http://127.0.0.1:9000/reason</code>
+        </p>
+      </div>
+
+      <div class="bg-white p-4 rounded-xl shadow">
+        <div class="space-y-2 text-sm">
+          <button id="pingBtn" class="px-3 py-1.5 bg-slate-800 text-white rounded">Ping /status</button>
+          <pre id="ping" class="bg-slate-50 p-2 rounded h-40 overflow-auto"></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Results -->
+    <section id="results" class="hidden grid lg:grid-cols-3 gap-6"></section>
+  </div>
+
+  <script>
+  // --- Config ---
+  const CITATION_LINKS = {
+    "cap_idsa_2019.txt": "https://www.idsociety.org/practice-guideline/community-acquired-pneumonia-cap-in-adults/",
+    "kdigo_ckd_2022.txt": "https://kdigo.org/guidelines/ckd-evaluation-and-management/",
+    "ada_diabetes_2024.txt": "https://diabetesjournals.org/care/issue"
+  };
+  const $ = (id) => document.getElementById(id);
+  const API_HOST = (location.hostname === "localhost" || location.hostname === "127.0.0.1")
+    ? location.hostname
+    : "127.0.0.1";
+  const API = `http://${API_HOST}:9000`;
+
+  // --- Helpers ---
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, m => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  })[m]);
+
+  const showError = async (r) => {
+    let body = "";
+    try { body = await r.text(); } catch {}
+    alert(`Request failed: ${r.status} ${r.statusText}\n\n${body}`);
+  };
+
+  // --- Buttons ---
+  $("exFacts").onclick = () => {
+    $("facts").value = JSON.stringify(
+      [
+        {"text":"O2 sat 92% RA"},
+        {"text":"eGFR 42 mL/min"},
+        {"text":"Dry cough after starting lisinopril"}
+      ],
+      null, 2
+    );
+  };
+
+  $("pingBtn").onclick = async () => {
+    $("ping").textContent = "Checking...";
+    try {
+      const r = await fetch(`${API}/status`);
+      if (!r.ok) return showError(r);
+      $("ping").textContent = JSON.stringify(await r.json(), null, 2);
+    } catch (e) {
+      $("ping").textContent = `Network error: ${e?.message || e}`;
+    }
+  };
+
+  $("askBtn").onclick = async () => {
+    const question = $("q").value || "";
+    let facts = [];
+    try {
+      facts = $("facts").value.trim() ? JSON.parse($("facts").value) : [];
+      if (!Array.isArray(facts)) throw new Error("facts must be an array");
+    } catch (e) {
+      alert('Patient facts is not valid JSON.\n\nExample:\n[\n  {"text":"O2 sat 92% RA"}\n]');
+      return;
+    }
+
+    $("status").textContent = "Asking model...";
+    try {
+      const r = await fetch(`${API}/reason`, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ question, patient_facts: facts })
+      });
+      if (!r.ok) { $("status").textContent = "Request failed."; return showError(r); }
+      const j = await r.json();
+      $("status").textContent = "";
+      renderResults(j);
+    } catch (e) {
+      $("status").textContent = "Request failed.";
+      alert(`Network error: ${e?.message || e}`);
+    }
+  };
+
+  // --- Rendering ---
+  function renderResults(resp) {
+    if (resp?.summary) return renderServerSummary(resp.summary, resp);
+    return renderCards(resp);
+  }
+
+  function renderServerSummary(sum, resp) {
+    const wrap = document.getElementById("results");
+    wrap.classList.remove("hidden");
+    wrap.className = "grid gap-6";
+
+    const section = (title, items, ordered=false) => {
+      if (!items || !items.length) return "";
+      const list = ordered
+        ? `<ol class="list-decimal pl-5 mt-2 text-sm">${items.map(s=>`<li>${esc(s)}</li>`).join("")}</ol>`
+        : `<ul class="list-disc pl-5 mt-2 text-sm">${items.map(s=>`<li>${esc(s)}</li>`).join("")}</ul>`;
+      return `
+        <h3 class="text-lg font-semibold mt-4">${esc(title)}</h3>
+        ${list}
+      `;
+    };
+
+    const cites = (sum.citations || []).map(c => {
+      const url = (window.CITATION_LINKS || {})[c];
+      return url
+        ? `<a class="underline" href="${url}" target="_blank" rel="noreferrer">${esc(c)}</a>`
+        : `<span class="font-mono">${esc(c)}</span>`;
+    }).join(", ") || "—";
+
+    wrap.innerHTML = `
+      <div class="bg-white p-6 rounded-xl shadow">
+        <h2 class="text-2xl font-semibold mb-4">Clinical Summary</h2>
+
+        <p class="text-sm text-slate-600 mb-2">
+          <span class="font-medium">Problem:</span> ${esc(sum.problem || "")}
+        </p>
+
+        ${sum.factors?.relevant?.length ? `
+          <h3 class="text-lg font-semibold mt-2">Key Relevant Factors</h3>
+          <ul class="list-disc pl-5 mt-2 text-sm">
+            ${sum.factors.relevant.map(s => `<li>${esc(s)}</li>`).join("")}
+          </ul>` : ""}
+
+        ${sum.factors?.ignored?.length ? `
+          <p class="mt-3 text-xs text-slate-500">Ignored as not relevant:</p>
+          <ul class="list-disc pl-5 text-xs text-slate-500">
+            ${sum.factors.ignored.map(s => `<li>${esc(s)}</li>`).join("")}
+          </ul>` : ""}
+
+        ${section("Differential (prioritized)", sum.differential)}
+        ${section("Diagnostics", sum.diagnostics)}
+        ${section("Treatment", sum.treatment)}
+        ${section("Disposition", sum.disposition)}
+        ${section("Patient Counseling", sum.counseling)}
+        ${section("Red Flags — return/ED now if:", sum.red_flags)}
+
+        ${sum.notes?.length ? `
+          <div class="mt-6 text-sm text-slate-600">
+            <h4 class="font-semibold mb-1">Why Filtering Matters</h4>
+            ${(sum.notes || []).map(n => `<p class="mb-1">${esc(n)}</p>`).join("")}
+          </div>` : ""}
+
+        <div class="mt-4 text-xs text-slate-500">
+          <span class="font-medium">Citations:</span> ${cites}
+          ${resp?.engine ? ` &nbsp;·&nbsp; engine: ${esc(resp.engine)}` : ""}
+        </div>
+      </div>
+    `;
+  }
+
+  // Minimal fallback if backend summary missing
+  function renderCards(resp) {
+    const wrap = $("results");
+    wrap.classList.remove("hidden");
+    wrap.className = "grid gap-6";
+    wrap.innerHTML = `
+      <div class="bg-white p-6 rounded-xl shadow">
+        <h2 class="text-xl font-semibold mb-2">Answer</h2>
+        <p class="text-sm text-slate-600 mb-4">Question: ${esc(resp?.question || "")}</p>
+        <div class="grid md:grid-cols-3 gap-4">
+          ${(resp?.options || []).map(o => `
+            <div class="border rounded-lg p-3">
+              <h3 class="font-semibold">${esc(o.title)}</h3>
+              <p class="text-sm mt-1">${esc(o.rationale || "")}</p>
+            </div>`).join("")}
+        </div>
+      </div>
+    `;
+  }
+</script>
+</body>
+</html>

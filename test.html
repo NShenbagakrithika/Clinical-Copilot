@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Clinical Copilot</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-tr from-blue-50 to-indigo-100 min-h-screen text-slate-800">
+  <div class="max-w-7xl mx-auto py-10 px-6">
+    <h1 class="text-4xl font-bold mb-8 text-center text-indigo-800">🩺 Clinical Copilot</h1>
+
+    <!-- Input Section -->
+    <section class="grid md:grid-cols-2 gap-6">
+      <div class="bg-white p-6 rounded-xl shadow-lg border border-slate-200">
+        <h2 class="text-xl font-semibold mb-4">Ask a Clinical Question</h2>
+
+        <label class="block mb-2 text-sm font-medium">Enter your question</label>
+        <input id="q" class="w-full border rounded px-4 py-2 mb-4" 
+               value="fever + productive cough + pleuritic chest pain — next steps?" />
+
+        <div class="flex justify-between items-center mb-2">
+          <label class="text-sm font-medium">Patient Facts (JSON array)</label>
+          <button id="exFacts" class="text-xs text-indigo-600 hover:underline">Insert Example</button>
+        </div>
+        <textarea id="facts" class="w-full border rounded px-3 py-2 h-40 text-sm font-mono mb-4"
+                  placeholder='[{"text": "O2 sat 92% RA"}]'></textarea>
+
+        <div class="flex gap-3 items-center">
+          <button id="askBtn" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+            🔍 Ask
+          </button>
+          <span id="status" class="text-sm text-slate-600"></span>
+        </div>
+      </div>
+
+      <!-- Server Ping -->
+      <div class="bg-white p-6 rounded-xl shadow-lg border border-slate-200">
+        <h2 class="text-xl font-semibold mb-4">🔌 Server Status</h2>
+        <button id="pingBtn" class="bg-slate-800 text-white px-4 py-2 rounded hover:bg-slate-700">Ping /status</button>
+        <pre id="ping" class="bg-slate-100 mt-4 p-3 rounded h-40 overflow-auto text-sm"></pre>
+      </div>
+    </section>
+
+    <!-- Output Section -->
+    <section id="results" class="hidden grid lg:grid-cols-3 gap-6 mt-10">
+      <!-- Options -->
+      <div class="col-span-2 bg-white p-6 rounded-xl shadow-lg border border-slate-200">
+        <h2 class="text-xl font-semibold mb-4">📋 Clinical Recommendations</h2>
+        <p id="askedQ" class="text-sm text-slate-600 mb-4"></p>
+        <div id="options" class="grid md:grid-cols-2 gap-4"></div>
+      </div>
+
+      <!-- Evidence -->
+      <div class="bg-white p-6 rounded-xl shadow-lg border border-slate-200">
+        <h2 class="text-xl font-semibold mb-4">📚 Supporting Evidence</h2>
+        <h4 class="font-semibold">Patient Evidence</h4>
+        <ul id="patSnips" class="list-disc pl-5 text-sm mb-4 text-slate-700 space-y-1"></ul>
+
+        <h4 class="font-semibold mt-4">Cited Guidelines</h4>
+        <ul id="docs" class="list-disc pl-5 text-sm text-slate-700 space-y-1"></ul>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const API = "http://127.0.0.1:9000";
+    const $ = (id) => document.getElementById(id);
+
+    const CITATION_LINKS = {
+      "cap_idsa_2019.txt": "https://www.idsociety.org/practice-guideline/community-acquired-pneumonia-cap-in-adults/",
+      "kdigo_ckd_2022.txt": "https://kdigo.org/guidelines/ckd-evaluation-and-management/",
+      "ada_diabetes_2024.txt": "https://diabetesjournals.org/care/issue"
+    };
+
+    $("exFacts").onclick = () => {
+      $("facts").value = JSON.stringify([
+        { "text": "O2 sat 92% RA" },
+        { "text": "WBC 17K/uL" },
+        { "text": "Tachypnea" },
+        { "text": "Age 72" }
+      ], null, 2);
+    };
+
+    $("pingBtn").onclick = async () => {
+      $("ping").textContent = "Checking...";
+      try {
+        const r = await fetch(`${API}/status`);
+        $("ping").textContent = JSON.stringify(await r.json(), null, 2);
+      } catch (e) {
+        $("ping").textContent = "❌ Could not reach backend.";
+      }
+    };
+
+    $("askBtn").onclick = async () => {
+      const question = $("q").value;
+      let facts = [];
+      try {
+        facts = $("facts").value.trim() ? JSON.parse($("facts").value) : [];
+      } catch (e) {
+        alert("Invalid JSON.\nTip: Start with: [{\"text\": \"O2 sat 92%\"}]");
+        return;
+      }
+
+      $("status").textContent = "Asking model...";
+      try {
+        const r = await fetch(`${API}/reason`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question, patient_facts: facts })
+        });
+        const j = await r.json();
+        renderResults(j);
+        $("status").textContent = "";
+      } catch (e) {
+        $("status").textContent = "❌ Failed to connect.";
+      }
+    };
+
+    function renderResults(resp) {
+      $("results").classList.remove("hidden");
+      $("askedQ").textContent = "Question: " + (resp.question || "");
+
+      const wrap = $("options");
+      wrap.innerHTML = "";
+      (resp.options || []).forEach((o) => {
+        const card = document.createElement("div");
+        card.className = "border rounded-lg p-4 shadow text-sm bg-slate-50";
+        card.innerHTML = `
+          <h3 class="font-semibold text-indigo-700">${esc(o.title)}</h3>
+          <p class="mt-1 mb-2 text-slate-700">${esc(o.rationale || "")}</p>
+          ${listBlock("Steps", o.steps)}
+          ${listBlock("Risks", o.risks)}
+          ${listBlock("Monitoring", o.monitoring)}
+          <div class="mt-2 text-xs text-slate-500">${renderCitations(o.citations)}</div>
+        `;
+        wrap.appendChild(card);
+      });
+
+      $("patSnips").innerHTML = "";
+      (resp.evidence?.patient_snippets || []).forEach((s) => {
+        const li = document.createElement("li");
+        li.textContent = s.text || JSON.stringify(s);
+        $("patSnips").appendChild(li);
+      });
+
+      $("docs").innerHTML = "";
+      $("docs").innerHTML = "";
+const allCitations = [...new Set(
+  (resp.options || []).flatMap(opt => opt.citations || [])
+)];
+
+allCitations.forEach(c => {
+  const li = document.createElement("li");
+  const a = document.createElement("a");
+  a.href = c.url;
+  a.target = "_blank";
+  a.className = "text-blue-600 hover:underline";
+  a.textContent = `${c.title} (${c.year})`;
+  li.appendChild(a);
+  $("docs").appendChild(li);
+});
+
+    function listBlock(title, items) {
+      if (!items || !items.length) return "";
+      const lis = items.map(s => `<li>${esc(s)}</li>`).join("");
+      return `<div class="mt-2"><h4 class="text-sm font-semibold">${title}</h4><ul class="list-disc pl-5">${lis}</ul></div>`;
+    }
+
+    function renderCitations(cites) {
+      if (!cites || !cites.length) return "Citations: —";
+      return `Citations: ${cites.map(c => CITATION_LINKS[c] 
+        ? `<a class="underline text-indigo-600" href="${CITATION_LINKS[c]}" target="_blank">${c}</a>` 
+        : `<span class="font-mono">${c}</span>`).join(", ")}`;
+    }
+
+    function esc(s) {
+      return String(s ?? "").replace(/[&<>"']/g, m => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+      })[m]);
+    }
+  </script>
+</body>
+</html>
